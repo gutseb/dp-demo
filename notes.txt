@@ -156,3 +156,230 @@ to build a new example application in Ruby. Or use kubectl to deploy a simple Ku
 
 
 
+    1  exit
+    2  ls
+    3  oc login -u admin -p tZyneOk3Y792
+    4  cat << EOF | oc apply -f -
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    kubernetes.io/metadata.name: openshift-nmstate
+    name: openshift-nmstate
+  name: openshift-nmstate
+spec:
+  finalizers:
+  - kubernetes
+EOF
+
+    5  cat << EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  annotations:
+    olm.providedAPIs: NMState.v1.nmstate.io
+  name: openshift-nmstate
+  namespace: openshift-nmstate
+spec:
+  targetNamespaces:
+  - openshift-nmstate
+EOF
+
+    6  cat << EOF| oc apply -f -
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  labels:
+    operators.coreos.com/kubernetes-nmstate-operator.openshift-nmstate: ""
+  name: kubernetes-nmstate-operator
+  namespace: openshift-nmstate
+spec:
+  channel: stable
+  installPlanApproval: Automatic
+  name: kubernetes-nmstate-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+EOF
+
+    7  cat << EOF | oc apply -f -
+apiVersion: nmstate.io/v1
+kind: NMState
+metadata:
+  name: nmstate
+EOF
+
+    8  cat << EOF | oc apply -f -
+apiVersion: nmstate.io/v1
+kind: NMState
+metadata:
+  name: nmstate
+EOF
+
+    9  oc get clusterserviceversion -n openshift-nmstate  -o custom-columns=Name:.metadata.name,Phase:.status.phase
+   10  cat << EOF | oc apply -f -
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: metallb-system
+EOF
+
+   11  cat << EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: metallb-operator
+  namespace: metallb-system
+EOF
+
+   12  oc get operatorgroup -n metallb-system
+   13  vi metallb-sub.yaml
+   14  oc create -f metallb-sub.yaml
+   15  oc label ns metallb-system "openshift.io/cluster-monitoring=true"
+   16  oc get installplan -n metallb-system
+   17  oc get clusterserviceversion -n metallb-system   -o custom-columns=Name:.metadata.name,Phase:.status.phase
+   18  oc get clusterserviceversion -n metallb-system   -o custom-columns=Name:.metadata.name,Phase:.status.phase -w
+   19  oc get clusterserviceversion -n metallb-system   -o custom-columns=Name:.metadata.name,Phase:.status.phase
+   20  cat << EOF | oc apply -f -
+apiVersion: metallb.io/v1beta1
+kind: MetalLB
+metadata:
+  name: metallb
+  namespace: metallb-system
+EOF
+
+   21  oc get deployment -n metallb-system controller
+   22  oc get daemonset -n metallb-system speaker
+   23  oc get deployment -n metallb-system controller
+   24  oc get daemonset -n metallb-system speaker
+   25  cat << EOF | oc apply -f -
+apiVersion: v1
+kind: Namespace
+metadata:
+    name: cert-manager-operator
+    labels:
+      pod-security.kubernetes.io/enforce: privileged
+      security.openshift.io/scc.podSecurityLabelSync: "false"
+EOF
+
+   26  cat << EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: cert-manager-operator
+  namespace: cert-manager-operator
+spec:
+  targetNamespaces:
+  - cert-manager-operator
+  upgradeStrategy: Default
+EOF
+
+   27  oc get operatorgroup -n cert-manager-operator
+   28  cat << EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  labels:
+    operators.coreos.com/openshift-cert-manager-operator.cert-manager-operator: ""
+  name: openshift-cert-manager-operator
+  namespace: cert-manager-operator
+spec:
+  channel: stable-v1.12
+  installPlanApproval: Automatic
+  name: openshift-cert-manager-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  startingCSV: cert-manager-operator.v1.12.1
+EOF
+
+   29  oc get installplan -n cert-manager-operator
+   30  oc get clusterserviceversion -n cert-manager-operator  -o custom-columns=Name:.metadata.name,Phase:.status.phase
+   31  oc get pods -n cert-manager
+   32  oc get clusterserviceversion -n cert-manager-operator  -o custom-columns=Name:.metadata.name,Phase:.status.phase
+   33  oc get pods -n cert-manager
+   34  oc new-project quay-enterprise
+   35  history > historyintall.txt
+   36  vi historyintall.txt 
+   37  hostname
+   38  cat /etc/hosts 
+   39  cat << EOF >> config.yaml 
+SERVER_HOSTNAME: quay.apps.uuid.dynamic.redhatworkshops.io
+EOF
+
+   40  cat << EOF >> config.yaml 
+SERVER_HOSTNAME: quay.apps.7mqvr.dynamic.redhatworkshops.io
+EOF
+
+   41  cat config.yaml 
+   42  vi config.yaml 
+   43  oc create secret generic --from-file config.yaml=./config.yaml config-bundle-secret
+   44  cat << EOF >> quayregistry.yaml
+apiVersion: quay.redhat.com/v1
+kind: QuayRegistry
+metadata:
+  name: openstack-internal-registry
+  namespace: quay-enterprise
+spec:
+  configBundleSecret: config-bundle-secret
+  components:
+    - kind: clair
+      managed: false
+    - kind: horizontalpodautoscaler
+      managed: false
+    - kind: mirror
+      managed: false
+    - kind: monitoring
+      managed: false
+EOF
+
+   45  oc create -n quay-enterprise -f quayregistry.yaml
+   46  cat config.yaml 
+   47  oc create -n quay-enterprise -f quayregistry.yaml
+   48  cat << EOF >> quayregistry.yaml
+apiVersion: quay.redhat.com/v1
+kind: QuayRegistry
+metadata:
+  name: openstack-internal-registry
+  namespace: quay-enterprise
+spec:
+  configBundleSecret: config-bundle-secret
+  components:
+    - kind: clair
+      managed: false
+    - kind: horizontalpodautoscaler
+      managed: false
+    - kind: mirror
+      managed: false
+    - kind: monitoring
+      managed: false
+EOF
+
+   49  oc create -n quay-enterprise -f quayregistry.yaml
+   50  oc get pods -n quay-enterprise -w
+   51  ex +'/BEGIN CERTIFICATE/,/END CERTIFICATE/p' <(echo | openssl s_client -showcerts -connect quay.apps.7mqvr.dynamic.redhatworkshops.io:443) -scq > server.pem
+   52  oc create configmap registry-config --from-file=quay.apps.7mqvr.dynamic.redhatworkshops.io=server.pem -n openshift-config
+   53  oc patch image.config.openshift.io/cluster --patch '{"spec":{"additionalTrustedCA":{"name":"registry-config"}}}' --type=merge
+   54  oc patch image.config.openshift.io/cluster --type merge --patch '{"spec":{"registrySources":{"allowedRegistries":["docker-registry.upshift.redhat.com","registry.redhat.io","quay.io","registry-proxy.engineering.redhat.com","gcr.io","image-registry.openshift-image-registry.svc:5000","quay.apps.7mqvr.dynamic.redhatworkshops.io"],"insecureRegistries":["docker-registry.upshift.redhat.com","quay.apps.7mqvr.dynamic.redhatworkshops.io"]}}}'
+   55  sudo cp server.pem /etc/pki/ca-trust/source/anchors/
+   56  sudo cp server.pem /etc/pki/tls/certs/
+   57  sudo update-ca-trust
+   58  ls
+   59  mkdir src
+   60  cd src/
+   61  ls
+   62  dnf install gh
+   63  git clone https://github.com/gutseb/dp-demo.git
+   64  cd dp-demo/
+   65  ls
+   66  git touch notes.txt
+   67  cat ~/historyintall.txt > notes.txt
+   68  git status
+   69  git add notes.txt 
+   70  git commit -m "notes file for install" 
+   71  git config --global --edit
+   72  git commit -m "notes file for install" 
+   73  git push
+   74  git status
+   75  git pull
+   76  vi /var/tmp/keyfile
+   77  ls
+   78  history >> notes.txt 
